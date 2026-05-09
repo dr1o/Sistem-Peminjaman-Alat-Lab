@@ -15,10 +15,13 @@
                 @endif
 
                 @if(auth()->user()?->role == 'admin')
-                <div class="mb-4">
-                    <a href="{{ route('equipments.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded">+ Tambah Alat Baru</a>
+                <div class="mb-4 flex gap-2">
+                    <a href="{{ route('equipments.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700">+ Tambah Alat Baru</a>
+                    <!-- TOMBOL MENUJU TEMPAT SAMPAH -->
+                    <a href="{{ route('equipments.trash') }}" class="bg-red-500 text-white px-4 py-2 rounded shadow hover:bg-red-600">🗑️ Tempat Sampah</a>
                 </div>
                 @endif
+                
                 <form method="GET" class="mb-4 flex gap-2">
                     <input type="text" name="search"
                         value="{{ request('search') }}"
@@ -35,6 +38,7 @@
                     </a>
                     @endif
                 </form>
+                
                 <table class="min-w-full border border-gray-300">
                     <tr class="bg-gray-100">
                         <th class="border px-4 py-2">Nama</th>
@@ -55,10 +59,12 @@
                                 @if($item->stok > 0)
                                 <form action="{{ route('equipments.decrease', $item->id) }}" method="POST">@csrf <button class="text-yellow-600">- Stok</button></form>
                                 @endif
-                                <form action="{{ route('equipments.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus alat ini secara permanen?');">
+                                
+                                <!-- TOMBOL SOFT DELETE DENGAN CAUTION -->
+                                <form action="{{ route('equipments.destroy', $item->id) }}" method="POST" onsubmit="return confirm('PERHATIAN: Yakin ingin memindahkan alat ini ke tempat sampah? (Data masih bisa di-restore nantinya)');">
                                     @csrf
                                     @method('DELETE')
-                                    <button class="text-red-600">Hapus Permanen</button>
+                                    <button class="text-red-500 hover:text-red-700 font-semibold">Hapus (Ke Sampah)</button>
                                 </form>
                                 @endif
 
@@ -95,3 +101,14 @@
         </div>
     </div>
 </x-app-layout>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@if(session('error'))
+    <script>
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal Dihapus!',
+            text: "{{ session('error') }}",
+        });
+    </script>
+@endif

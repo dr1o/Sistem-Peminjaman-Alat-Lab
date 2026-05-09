@@ -11,26 +11,26 @@ use Illuminate\Support\Facades\Auth;
 class EquipmentController extends Controller
 {
     public function index(Request $request)
-{
-    $userId = Auth::id();
+    {
+        $userId = Auth::id();
 
-    $query = Equipment::with('category');
+        $query = Equipment::with('category');
 
-    // 🔍 SEARCH BAR
-    if ($request->has('search')) {
-        $query->where('nama_alat', 'like', '%' . $request->search . '%');
+        // 🔍 SEARCH BAR
+        if ($request->has('search')) {
+            $query->where('nama_alat', 'like', '%' . $request->search . '%');
+        }
+
+        $all_equipment = $query->get();
+
+        // Ambil daftar equipment yang sedang dipinjam atau menunggu
+        $userLoans = Loan::where('user_id', $userId)
+                        ->whereIn('status', ['Menunggu Persetujuan Pinjam','Dipinjam'])
+                        ->pluck('equipment_id')
+                        ->toArray();
+
+        return view('equipments.index', compact('all_equipment','userLoans'));
     }
-
-    $all_equipment = $query->get();
-
-    // Ambil daftar equipment yang sedang dipinjam atau menunggu
-    $userLoans = Loan::where('user_id', $userId)
-                    ->whereIn('status', ['Menunggu Persetujuan Pinjam','Dipinjam'])
-                    ->pluck('equipment_id')
-                    ->toArray();
-
-    return view('equipments.index', compact('all_equipment','userLoans'));
-}
 
     public function create()
     {
@@ -76,11 +76,46 @@ class EquipmentController extends Controller
     }
 
     public function destroy($id)
-{
-    $equipment = Equipment::withTrashed()->findOrFail($id); // include soft deleted
-    $equipment->forceDelete(); // hapus permanen
-    return back()->with('success', 'Alat berhasil dihapus permanen!');
-}
+    {
+        $equipment = Equipment::findOrFail($id);
+
+        // Cek apakah alat sedang dipinjam atau dalam proses persetujuan
+        $activeLoans = Loan::where('equipment_id', $id)
+            ->whereIn('status', ['Menunggu Persetujuan Pinjam', 'Dipinjam', 'Menunggu Persetujuan Kembali'])
+            ->exists();
+
+        if ($activeLoans) {
+            return back()->with('error', 'GAGAL: Alat ini tidak bisa dihapus karena sedang dipinjam atau dalam proses peminjaman!');
+        }
+
+        // Hapus sementara (Soft Delete)
+        $equipment->delete(); 
+        
+        return back()->with('success', 'Alat berhasil dipindahkan ke Tempat Sampah!');
+    }
+
+    // 🔥 FITUR TRASH BIN (ADMIN)
+    public function trash()
+    {
+        $trashedEquipments = Equipment::onlyTrashed()->with('category')->get();
+        return view('equipments.trash', compact('trashedEquipments'));
+    }
+
+    public function restore($id)
+    {
+        $equipment = Equipment::onlyTrashed()->findOrFail($id);
+        $equipment->restore();
+
+        return back()->with('success', 'Alat berhasil dipulihkan dari Tempat Sampah!');
+    }
+
+    public function forceDestroy($id)
+    {
+        $equipment = Equipment::onlyTrashed()->findOrFail($id);
+        $equipment->forceDelete();
+
+        return back()->with('success', 'Alat berhasil dihapus secara permanen!');
+    }
 
     // 🔥 Kurangi stok 1
     public function decreaseStock($id)
@@ -105,6 +140,7 @@ class EquipmentController extends Controller
 
         return redirect()->back()->with('success', 'Semua stok dihapus!');
     }
+
     public function increaseStock($id)
     {
         $equipment = Equipment::findOrFail($id);

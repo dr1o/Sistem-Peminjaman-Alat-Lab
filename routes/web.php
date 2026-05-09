@@ -29,14 +29,21 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/laporan-pinjam', [LoanController::class, 'adminIndex'])->name('loans.admin');
     Route::post('/loans/{id}/approve-borrow', [LoanController::class, 'approveBorrow'])->name('loans.approve_borrow');
     Route::post('/loans/{id}/approve-return', [LoanController::class, 'approveReturn'])->name('loans.approve_return');
-    Route::post('/loans/{id}/reject-borrow', [LoanController::class, 'rejectBorrow'])->name('loans.reject_borrow'); // <--- INI TAMBAHANNYA
+    Route::post('/loans/{id}/reject-borrow', [LoanController::class, 'rejectBorrow'])->name('loans.reject_borrow');
     
     // Admin Equipment
     Route::delete('/equipments/{id}', [EquipmentController::class, 'destroy'])
      ->name('equipments.destroy')
-     ->middleware('auth','admin');
+     ->middleware('admin');
 
-    //profile
+    // Rute Trash Bin & Soft Deletes (ADMIN ONLY)
+    Route::middleware(['admin'])->group(function () {
+        Route::get('/equipments-trash', [EquipmentController::class, 'trash'])->name('equipments.trash');
+        Route::post('/equipments-trash/{id}/restore', [EquipmentController::class, 'restore'])->name('equipments.restore');
+        Route::delete('/equipments-trash/{id}/force-delete', [EquipmentController::class, 'forceDestroy'])->name('equipments.force_destroy');
+    });
+
+    // Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
