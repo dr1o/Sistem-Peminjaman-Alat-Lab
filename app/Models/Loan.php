@@ -8,8 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Loan extends Model
 {
     // 🔥 TAMBAHKAN 'jumlah' DISINI
-    protected $fillable = ['user_id', 'equipment_id', 'jumlah', 'tanggal_pinjam', 'status'];
-
+    protected $fillable = ['user_id', 'equipment_id', 'jumlah', 'tanggal_pinjam', 'status', 'approved_at', 'return_date'];
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

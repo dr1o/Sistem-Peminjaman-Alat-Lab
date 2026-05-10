@@ -68,14 +68,16 @@ class LoanController extends Controller
     }
 
     public function approveReturn($id) {
-        $loan = Loan::findOrFail($id);
-        $loan->update(['status' => 'Dikembalikan']);
-        
-        // Tambah stok sesuai jumlah yang dikembalikan
-        $loan->equipment->increment('stok', $loan->jumlah);
-        
-        return back()->with('success', 'Pengembalian disetujui. Stok telah ditambahkan kembali!');
-    }
+    $loan = Loan::findOrFail($id);
+    $loan->update([
+        'status' => 'Dikembalikan',
+        'return_date' => now(),
+    ]);
+    
+    $loan->equipment->increment('stok', $loan->jumlah);
+    
+    return back()->with('success', 'Pengembalian disetujui. Stok telah ditambahkan kembali!');
+}
 
     public function rejectBorrow($id) {
         $loan = Loan::findOrFail($id);
